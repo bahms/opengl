@@ -1,5 +1,5 @@
 #include <iostream>
-#include <glad/glad.h>
+#include "Shader.h"
 #include <GLFW/glfw3.h>
 
 void framebuffer_size_callback(GLFWwindow*, int, int);
@@ -7,25 +7,6 @@ void processInput(GLFWwindow*);
 
 const int WND_WIDTH = 800;
 const int WND_HEIGHT = 600;
-
-const char* vertexShaderSource = R"(
-#version 410
-layout ( location = 0 ) in vec3 pos;
-void main()
-{
-	gl_Position = vec4(pos.x, pos.y, pos.z, 1.0);
-}
-)";
-
-const char* fragShaderSource = R"(
-#version 410
-uniform vec4 ourColor;
-out vec4 outColor;
-void main()
-{
-	outColor = ourColor;
-}
-)";
 
 int main()
 {
@@ -57,13 +38,12 @@ int main()
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 	
 	// for VBO usage
-	float vertices[] = { -0.5f, 0.5f, 0.0f,
-						 0.5f, 0.5f, 0.0f,
-						 0.5f, -0.5f, 0.0f,
-						 -0.5f, -0.5f, 0.0f};
+	float vertices[] = { -0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f,
+						 0.0f, 0.5f, 0.0f, 0.0f, 1.0f, 0.0f,
+						 0.5f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f
+	};
 	// for EBO usage
 	unsigned int indices[] = { 
-		0,2,3, 
 		0,1,2 
 	};
 
@@ -97,9 +77,19 @@ int main()
 	// 1st  paramater : index which relates to "layout (location=0)"
 	// 2nd : number of attributes per vertex, must be 1, 2, 3 or 4
 	// 3rd : size of an attribute
-	int NB_ATTR_PER_VERTEX = 3;
-	glVertexAttribPointer(0, NB_ATTR_PER_VERTEX, GL_FLOAT, GL_FALSE, NB_ATTR_PER_VERTEX * sizeof(float), (void*)0);
+
+	int COMPONENTS_PER_VERTEX_ATTRIBUTE = 3;
+	int NB_ATTRIBUTES_COUNT = 2; // coordinates + color
+	int stride = COMPONENTS_PER_VERTEX_ATTRIBUTE * NB_ATTRIBUTES_COUNT * sizeof(float);
+
+	//-> link the coordinates attributes
+	glVertexAttribPointer(0, COMPONENTS_PER_VERTEX_ATTRIBUTE, GL_FLOAT, GL_FALSE, stride, (void*)0);
 	glEnableVertexAttribArray(0);
+
+	//=> link the color attributes
+	glVertexAttribPointer(1, COMPONENTS_PER_VERTEX_ATTRIBUTE, GL_FLOAT, GL_FALSE, stride, (void*)(3 * sizeof(float)));
+	glEnableVertexAttribArray(1);
+
 
 	//unbind as the above (call to glVertexAttribPointer) have done the necessary registrations
 	glBindVertexArray(0);
@@ -109,55 +99,7 @@ int main()
 	// shaders
 	////////////////////
 
-	// vertex shader
-	unsigned int  vertexShader;
-	vertexShader = glCreateShader(GL_VERTEX_SHADER);
-	glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
-	glCompileShader(vertexShader);
-
-
-	//check compilation
-	int success;
-	char infoLog[512];
-	glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
-	if (!success)
-	{
-		glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
-		std::cout << "ERROR:SHADER:VERTEX" << infoLog << std::endl;
-	}
-
-	//-->fragment shader
-	unsigned int fragShader;
-	fragShader = glCreateShader(GL_FRAGMENT_SHADER);
-	glShaderSource(fragShader, 1, &fragShaderSource, NULL);
-	glCompileShader(fragShader);
-
-	//check compilation
-	glGetShaderiv(fragShader, GL_COMPILE_STATUS, &success);
-	if (!success)
-	{
-		glGetShaderInfoLog(fragShader, 512, NULL, infoLog);
-		std::cout << "ERROR:SHADER:FRAGMENT" << infoLog << std::endl;
-	}
-
-	//shader program to link the shaders
-	unsigned int shaderProgram;
-	shaderProgram = glCreateProgram();
-
-	glAttachShader(shaderProgram, vertexShader);
-	glAttachShader(shaderProgram, fragShader);
-	glLinkProgram(shaderProgram);
-
-	glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
-	if (!success)
-	{
-		glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
-		std::cout << "ERROR:LINK:PROGRAM" << infoLog << std::endl;
-	}
-
-	// ==> after having linked shader to the program, the shader can be deleted
-	glDeleteShader(vertexShader);
-	glDeleteShader(fragShader);
+	Shader shader("4.1.shader.vs","4.1.shader.fs");
 
 	/////////////
 	// main loop
@@ -172,13 +114,12 @@ int main()
 		//rendering commands
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
-		float time = glfwGetTime();
-		std::cout << time << std::endl;
-		float greenColor = (sin(time) / 2.0f) + 0.5f;
-		int vertexColorLocation = glGetUniformLocation(shaderProgram, "ourColor");
-		glUniform4f(vertexColorLocation, 0.0f, greenColor, 0.0f, 1.0f);
+		//float time = glfwGetTime();
+		//float greenColor = (sin(time) / 2.0f) + 0.5f;
+		//int vertexColorLocation = glGetUniformLocation(shader.ID, "ourColor");
+		//glUniform4f(vertexColorLocation, 0.0f, greenColor, 0.0f, 1.0f);
 
-		glUseProgram(shaderProgram);
+		shader.use();
 		glBindVertexArray(VAO);
 		//glDrawArrays(GL_TRIANGLES, 0, 3); //only suitable where there are no duplicates in the data mesh
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);

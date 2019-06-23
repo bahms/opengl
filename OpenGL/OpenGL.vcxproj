@@ -23,7 +23,11 @@
     <ClCompile Include="src\HelloWindow.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="src\vertex.shader" />
+    <ClInclude Include="src\Shader.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="4.1.shader.fs" />
+    <None Include="4.1.shader.vs" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>

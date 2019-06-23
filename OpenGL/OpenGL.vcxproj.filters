@@ -23,8 +23,12 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="src\vertex.shader">
-      <Filter>Source Files</Filter>
-    </None>
+    <ClInclude Include="src\Shader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="4.1.shader.fs" />
+    <None Include="4.1.shader.vs" />
   </ItemGroup>
 </Project>
