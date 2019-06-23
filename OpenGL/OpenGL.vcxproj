@@ -22,9 +22,6 @@
     <ClCompile Include="src\glad.c" />
     <ClCompile Include="src\HelloWindow.cpp" />
   </ItemGroup>
-  <ItemGroup>
-    <None Include="src\vertex.shader" />
-  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <ProjectGuid>{562E3967-F114-4C9A-829B-A01FB2BC0C94}</ProjectGuid>
