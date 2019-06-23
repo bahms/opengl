@@ -19,10 +19,11 @@ void main()
 
 const char* fragShaderSource = R"(
 #version 410
+uniform vec4 ourColor;
 out vec4 outColor;
 void main()
 {
-	outColor = vec4(1.0f, 0.0f, 0.0f, 1.0f);
+	outColor = ourColor;
 }
 )";
 
@@ -162,7 +163,7 @@ int main()
 	// main loop
 	/////////////
 
-	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
 	while (!glfwWindowShouldClose(window))
 	{
@@ -171,6 +172,11 @@ int main()
 		//rendering commands
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
+		float time = glfwGetTime();
+		std::cout << time << std::endl;
+		float greenColor = (sin(time) / 2.0f) + 0.5f;
+		int vertexColorLocation = glGetUniformLocation(shaderProgram, "ourColor");
+		glUniform4f(vertexColorLocation, 0.0f, greenColor, 0.0f, 1.0f);
 
 		glUseProgram(shaderProgram);
 		glBindVertexArray(VAO);
