@@ -23,11 +23,21 @@
     <ClCompile Include="src\HelloWindow.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Includes\glad\glad.h" />
+    <ClInclude Include="Includes\GLFW\glfw3.h" />
+    <ClInclude Include="Includes\GLFW\glfw3native.h" />
+    <ClInclude Include="Includes\KHR\khrplatform.h" />
     <ClInclude Include="src\Shader.h" />
+    <ClInclude Include="src\stb_image.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="4.1.shader.fs" />
     <None Include="4.1.shader.vs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="awesomeface.png" />
+    <Image Include="container.jpg" />
+    <Image Include="wall.jpg" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
@@ -84,7 +94,7 @@
     <IncludePath>W:\OPENGL\Includes;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>W:\OPENGL\Includes;$(IncludePath)</IncludePath>
+    <IncludePath>W:\OPENGL\OpenGL\OpenGL\Includes;$(IncludePath)</IncludePath>
     <LibraryPath>W:\OPENGL\Libraries;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
