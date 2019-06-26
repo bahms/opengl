@@ -1,6 +1,9 @@
 #include <iostream>
 #include "Shader.h"
 #include <GLFW/glfw3.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -143,6 +146,9 @@ int main()
 	shader.setInt("texture0", 0);
 	shader.setInt("texture1", 1);
 
+
+
+
 	/////////////
 	// main loop
 	/////////////
@@ -156,14 +162,21 @@ int main()
 		//rendering commands
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
-		//float time = glfwGetTime();
+		float time = glfwGetTime();
 		//float greenColor = (sin(time) / 2.0f) + 0.5f;
 		//int vertexColorLocation = glGetUniformLocation(shader.ID, "ourColor");
-		//glUniform4f(vertexColorLocation, 0.0f, greenColor, 0.0f, 1.0f);
+		//glUniform1f(glGetUniformLocation(shader.ID, "time"), time);
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, texture[0]);
 		glActiveTexture(GL_TEXTURE1);
 		glBindTexture(GL_TEXTURE_2D, texture[1]);
+
+		glm::mat4 trans = glm::mat4(1.0f);
+		trans = glm::translate(trans, 0.5f * glm::vec3(sin(time), 0.0f, 0.0f));
+		trans = glm::rotate(trans, time, glm::vec3(0.0f, 0.0f, 1.0f));
+		trans = glm::scale(trans, glm::vec3(0.7f, 0.7f, 0.7f));
+
+		glUniformMatrix4fv(glGetUniformLocation(shader.ID, "transform"), 1, GL_FALSE, glm::value_ptr(trans));
 
 		shader.use();
 		glBindVertexArray(VAO);
