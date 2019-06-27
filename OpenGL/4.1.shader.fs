@@ -1,6 +1,5 @@
 #version 410
 
-in vec3 ourColor;
 in vec2 texLocation;
 
 out vec4 outColor;

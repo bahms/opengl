@@ -82,6 +82,11 @@ public:
 		glUniform1i(glGetUniformLocation(ID, name.c_str()), value);
 	}
 
+	void setMat4(const std::string& name, float* value) const
+	{
+		glUniformMatrix4fv(glGetUniformLocation(ID, name.c_str()), 1, GL_FALSE, value);
+	}
+
 private:
 	void checkErrors(unsigned int object_id, std::string object_type)
 	{

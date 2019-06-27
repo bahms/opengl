@@ -11,6 +11,8 @@
 void framebuffer_size_callback(GLFWwindow*, int, int);
 void processInput(GLFWwindow*);
 
+void transform(glm::mat4& t);
+
 const int WND_WIDTH = 800;
 const int WND_HEIGHT = 600;
 
@@ -44,15 +46,52 @@ int main()
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 	
 	// for VBO usage
-	float vertices[] = { //positions			//colors			//textures
-						 -0.5f, -0.5f, 0.0f,	1.0f, 0.0f, 0.0f,	0.0f, 0.0f,
-						 -0.5f, 0.5f, 0.0f,		0.0f, 1.0f, 0.0f,	0.0f, 1.0f,
-						 0.5f,  0.5f, 0.0f,		0.0f, 0.0f, 1.0f,	1.0f, 1.0f,
-						 0.5f, -0.5f, 0.0f,		1.0f, 1.0f, 0.0f,	1.0f, 0.0f
+	float vertices[] = {
+		-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+		 0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
+		 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+		 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+		-0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+		-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+
+		-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+		 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+		 0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+		 0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+		-0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
+		-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+
+		-0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+		-0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+		-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+		-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+		-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+		-0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+
+		 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+		 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+		 0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+		 0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+		 0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+		 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+
+		-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+		 0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
+		 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+		 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+		-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+		-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+
+		-0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+		 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+		 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+		 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+		-0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
+		-0.5f,  0.5f, -0.5f,  0.0f, 1.0f
 	};
 	// for EBO usage
 	unsigned int indices[] = { 
-		0,1,2, 0,2,3
+		0,1,2, 0,2,3, 1,2,4
 	};
 
 	/////////////////
@@ -75,10 +114,10 @@ int main()
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
 	// elements buffer attributes
-	unsigned int EBO;
-	glGenBuffers(1, &EBO);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+	//unsigned int EBO;
+	//glGenBuffers(1, &EBO);
+	//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+	//glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
 
 	//linking vertex attributes
@@ -86,19 +125,16 @@ int main()
 	// 2nd : number of attributes per vertex, must be 1, 2, 3 or 4
 	// 3rd : size of an attribute
 
-	int stride = (3+3+2) * sizeof(float);
+	int stride = (3+2) * sizeof(float);
 
 	//-> link the coordinates attributes
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, (void*)0);
 	glEnableVertexAttribArray(0);
 
-	//=> link the color attributes
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride, (void*)(3 * sizeof(float)));
-	glEnableVertexAttribArray(1);
 
 	//=>link the texture at level 2
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, stride, (void*)(6 * sizeof(float)));
-	glEnableVertexAttribArray(2);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, stride, (void*)(3 * sizeof(float)));
+	glEnableVertexAttribArray(1);
 
 
 	//unbind as the above (call to glVertexAttribPointer) have done the necessary registrations
@@ -155,14 +191,22 @@ int main()
 
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
+	glEnable(GL_DEPTH_TEST);
+
+	glm::vec3 cubePositions[] = {
+					glm::vec3(-0.0f, -0.0f, -0.5f),
+					glm::vec3(-1.0f, 1.0f, -2.0f),
+					glm::vec3(4.0f, -2.0f, -8.0f),
+	};
+
 	while (!glfwWindowShouldClose(window))
 	{
 		processInput(window);
 
 		//rendering commands
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT);
-		float time = glfwGetTime();
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		float time = (float) glfwGetTime();
 		//float greenColor = (sin(time) / 2.0f) + 0.5f;
 		//int vertexColorLocation = glGetUniformLocation(shader.ID, "ourColor");
 		//glUniform1f(glGetUniformLocation(shader.ID, "time"), time);
@@ -171,17 +215,30 @@ int main()
 		glActiveTexture(GL_TEXTURE1);
 		glBindTexture(GL_TEXTURE_2D, texture[1]);
 
-		glm::mat4 trans = glm::mat4(1.0f);
-		trans = glm::translate(trans, 0.5f * glm::vec3(sin(time), 0.0f, 0.0f));
-		trans = glm::rotate(trans, time, glm::vec3(0.0f, 0.0f, 1.0f));
-		trans = glm::scale(trans, glm::vec3(0.7f, 0.7f, 0.7f));
-
-		glUniformMatrix4fv(glGetUniformLocation(shader.ID, "transform"), 1, GL_FALSE, glm::value_ptr(trans));
-
 		shader.use();
+
+		//glm::mat4 model = glm::mat4(1.0f);
+		glm::mat4 view = glm::mat4(1.0f);
+		glm::mat4 projection = glm::mat4(1.0f);
+		
+		view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
+		projection = glm::perspective(glm::radians(45.0f), (float)WND_WIDTH / WND_HEIGHT, 0.1f, 100.0f);
+		
+		shader.setMat4("projection", glm::value_ptr(projection));
+		shader.setMat4("view", glm::value_ptr(view));
+
 		glBindVertexArray(VAO);
-		//glDrawArrays(GL_TRIANGLES, 0, 3); //only suitable where there are no duplicates in the data mesh
-		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+		for (int i = 0; i < 3; i++)
+		{
+			glm::mat4 model = glm::mat4(1.0f);
+			model = glm::translate(model, cubePositions[i]);
+			model = glm::rotate(model, glm::radians(20.0f) * (float)glm::pow(-1, i) * (float)glfwGetTime() * cubePositions[i].z, glm::vec3(1.0f, 0.3f, 0.0f));
+			shader.setMat4("model", glm::value_ptr(model));
+			glDrawArrays(GL_TRIANGLES, 0, 36);
+			//glDrawElements(GL_TRIANGLES, 9, GL_UNSIGNED_INT, 0);
+
+		}
 
 		//call events et buffers swap
 		glfwPollEvents();
@@ -190,7 +247,7 @@ int main()
 
 	glDeleteVertexArrays(1, &VAO);
 	glDeleteBuffers(1, &VBO);
-	glDeleteBuffers(1, &EBO);
+	//glDeleteBuffers(1, &EBO);
 
 	glfwTerminate();
 
@@ -206,4 +263,13 @@ void processInput(GLFWwindow* window)
 {
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, true);
+}
+
+void transform(glm::mat4& t)
+{
+	t = glm::mat4(1.0f);
+//	t = glm::translate(t, 0.5f * glm::vec3(sin(glfwGetTime()), 0.0f, 0.0f));
+//	t = glm::rotate(t, glm::radians(80.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+	t = glm::scale(t, glm::vec3(2.0f, 2.0f, 1.0f));
+	
 }

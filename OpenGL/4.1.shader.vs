@@ -1,17 +1,17 @@
 #version 410
 layout ( location = 0 ) in vec3 pos;
-layout ( location = 1 ) in vec3 color;
-layout ( location = 2 ) in vec2 texCoord;
+layout ( location = 1 ) in vec2 texCoord;
 
+uniform mat4 model;
+uniform mat4 view;
+uniform mat4 projection;
 uniform mat4 transform;
 
-out vec3 ourColor;
 out vec2 texLocation;
 
 void main()
 {
-	gl_Position = transform * vec4(pos, 1.0);
-	ourColor = color;
+	gl_Position = projection * view * model * vec4(pos, 1.0);
 	texLocation = vec2( texCoord.x, 1.0f - texCoord.y );
 }
 
