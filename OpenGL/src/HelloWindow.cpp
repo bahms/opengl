@@ -4,24 +4,28 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include "Camera.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
 void framebuffer_size_callback(GLFWwindow*, int, int);
+void mouse_callback(GLFWwindow*, double, double);
+void scroll_callback(GLFWwindow*, double, double);
 void processInput(GLFWwindow*);
 
-void transform(glm::mat4& t);
+bool firstMouse = true;
 
 const int WND_WIDTH = 800;
 const int WND_HEIGHT = 600;
 
-glm::vec3 cameraPos(0.0f, 0.0f, 3.0f);
-glm::vec3 cameraFront(0.0f, 0.0f, -1.0f);
-glm::vec3 cameraUp(0.0f, 1.0f, 0.0f);
+float last_x = WND_WIDTH / 2;
+float last_y = WND_HEIGHT / 2;
 
 float deltaTime = 0.0f;
 float lastFrame = 0.0f;
+
+Camera cam(glm::vec3(0.0f, 0.0f, 3.0f));
 
 int main()
 {
@@ -51,6 +55,8 @@ int main()
 
 	//register the callback for when the window is resized
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+	glfwSetCursorPosCallback(window, mouse_callback);
+	glfwSetScrollCallback(window, scroll_callback);
 	
 	// for VBO usage
 	float vertices[] = {
@@ -96,10 +102,6 @@ int main()
 		-0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
 		-0.5f,  0.5f, -0.5f,  0.0f, 1.0f
 	};
-	// for EBO usage
-	unsigned int indices[] = { 
-		0,1,2, 0,2,3, 1,2,4
-	};
 
 	/////////////////
 	// VAO, VBO, EBO
@@ -119,18 +121,6 @@ int main()
 	glGenBuffers(1, &VBO);
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-	// elements buffer attributes
-	//unsigned int EBO;
-	//glGenBuffers(1, &EBO);
-	//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-	//glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-
-
-	//linking vertex attributes
-	// 1st  paramater : index which relates to "layout (location=0)"
-	// 2nd : number of attributes per vertex, must be 1, 2, 3 or 4
-	// 3rd : size of an attribute
 
 	int stride = (3+2) * sizeof(float);
 
@@ -189,9 +179,6 @@ int main()
 	shader.setInt("texture0", 0);
 	shader.setInt("texture1", 1);
 
-
-
-
 	/////////////
 	// main loop
 	/////////////
@@ -204,7 +191,11 @@ int main()
 					glm::vec3(-1.0f, -0.0f, -0.0f),
 					glm::vec3(-1.0f, 1.0f, -2.0f),
 					glm::vec3(2.0f, -2.0f, -3.0f),
+					glm::vec3(0.0f, -0.5f, 1.0f),
+					glm::vec3(1.0f, 0.5f, -0.8f),
 	};
+
+	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
 	while (!glfwWindowShouldClose(window))
 	{
@@ -218,9 +209,6 @@ int main()
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		float time = (float) glfwGetTime();
-		//float greenColor = (sin(time) / 2.0f) + 0.5f;
-		//int vertexColorLocation = glGetUniformLocation(shader.ID, "ourColor");
-		//glUniform1f(glGetUniformLocation(shader.ID, "time"), time);
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, texture[0]);
 		glActiveTexture(GL_TEXTURE1);
@@ -228,37 +216,28 @@ int main()
 
 		shader.use();
 
-		//glm::mat4 model = glm::mat4(1.0f);
-		glm::mat4 view = glm::mat4(1.0f);
-		glm::mat4 projection = glm::mat4(1.0f);
-		
-		//view = glm::translate(view, glm::vec3(0.0f, 0.0f, -5.0f));
-		float radius = 10.0f;
-		float cam_x = radius * sin((float)glfwGetTime());
-		float cam_z = radius * cos((float)glfwGetTime());
-		//view = glm::lookAt(glm::vec3(cam_x, 0.0f, cam_z), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-		view =  glm::lookAt(cameraPos, cameraFront + cameraPos , cameraUp);
-		projection = glm::perspective(glm::radians(45.0f), (float)WND_WIDTH / WND_HEIGHT, 0.1f, 100.0f);
-		
-		shader.setMat4("projection", glm::value_ptr(projection));
+		glm::mat4 projection = glm::perspective(glm::radians(cam.Zoom), (float)WND_WIDTH / (float)WND_HEIGHT, 0.1f, 100.0f);
+		shader.setMat4("projection", glm::value_ptr( projection));
+
+		// camera/view transformation
+		glm::mat4 view = cam.GetViewMatrix();
 		shader.setMat4("view", glm::value_ptr(view));
 
+		// render boxes
 		glBindVertexArray(VAO);
-		float rot = 1;
-		for (int i = 0; i < 3; i++)
+		for (unsigned int i = 0; i < 5; i++)
 		{
-			glm::mat4 model = glm::mat4(1.0f);
+			// calculate the model matrix for each object and pass it to shader before drawing
+			glm::mat4 model = glm::mat4(1.0f); // make sure to initialize matrix to identity matrix first
 			model = glm::translate(model, cubePositions[i]);
-			model = glm::rotate(model, rot *glm::radians(30.0f) * (float)glm::pow(-1, i) * (float)glfwGetTime() * cubePositions[i].z, glm::vec3(1.0f, 0.3f, 0.0f));
+			float angle = 20.0f * i;
+			model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
 			shader.setMat4("model", glm::value_ptr(model));
+
 			glDrawArrays(GL_TRIANGLES, 0, 36);
-			//glDrawElements(GL_TRIANGLES, 9, GL_UNSIGNED_INT, 0);
-
 		}
-
-		//call events et buffers swap
-		glfwPollEvents();
 		glfwSwapBuffers(window);
+		glfwPollEvents();
 	}
 
 	glDeleteVertexArrays(1, &VAO);
@@ -277,24 +256,37 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 
 void processInput(GLFWwindow* window)
 {
-	float speed = 2.0f * deltaTime;
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, true);
+
 	if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
-		cameraPos += speed * cameraFront;
+		cam.ProcessKeyboard(FORWARD, deltaTime);
 	if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
-		cameraPos -= speed * cameraFront;
+		cam.ProcessKeyboard(BACKWARD, deltaTime);
 	if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
-		cameraPos -= speed * glm::normalize(glm::cross(cameraFront, cameraUp));
+		cam.ProcessKeyboard(LEFT, deltaTime);
 	if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
-		cameraPos += speed * glm::normalize(glm::cross(cameraFront, cameraUp));
+		cam.ProcessKeyboard(RIGHT, deltaTime);
 }
 
-void transform(glm::mat4& t)
-{
-	t = glm::mat4(1.0f);
-//	t = glm::translate(t, 0.5f * glm::vec3(sin(glfwGetTime()), 0.0f, 0.0f));
-//	t = glm::rotate(t, glm::radians(80.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-	t = glm::scale(t, glm::vec3(2.0f, 2.0f, 1.0f));
-	
-}
+	void mouse_callback(GLFWwindow* window, double x, double y)
+	{
+		if (firstMouse)
+		{
+			last_x = x;
+			last_y = y;
+			firstMouse = false;
+		}
+
+		float xoffset = x - last_x;
+		float yoffset = last_y - y; // reversed since y-coordinates go from bottom to top
+
+		last_x = x;
+		last_y = y;
+		cam.ProcessMouseMovement(xoffset, yoffset, true);
+	}
+
+	void scroll_callback(GLFWwindow* w, double x, double y)
+	{
+		cam.ProcessMouseScroll(y);
+	}
