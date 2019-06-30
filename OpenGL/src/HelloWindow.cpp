@@ -110,10 +110,9 @@ int main()
 	//vertex array object : this object is necessary and help reduce api calls
 	// stores the calls to vertex attrib pointer for reuse
 	//here we only have one buffer ; could have several buffers by using an array
-	unsigned int VAO;
-	glGenVertexArrays(1, &VAO);
-	glBindVertexArray(VAO);
-
+	unsigned int color_VAO;
+	glGenVertexArrays(1, &color_VAO);
+	glBindVertexArray(color_VAO);
 
 	//prepare graphics memory : vertex buffer object
 	//here we only have one buffer ; could have several buffers by using an array
@@ -128,56 +127,24 @@ int main()
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, (void*)0);
 	glEnableVertexAttribArray(0);
 
-
-	//=>link the texture at level 2
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, stride, (void*)(3 * sizeof(float)));
-	glEnableVertexAttribArray(1);
-
-
 	//unbind as the above (call to glVertexAttribPointer) have done the necessary registrations
 	glBindVertexArray(0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
-
-	////////////////
-	// Texture
-	////////////////
-	const int NB_TEXTURE = 2;
-	unsigned int  texture[NB_TEXTURE];
-	glGenTextures(NB_TEXTURE, texture);
-	glBindTexture(GL_TEXTURE_2D, texture[0]);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	int width, height, nrChannels;
-	unsigned char* data = stbi_load("container.jpg", &width, &height, &nrChannels, 0);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-	glGenerateMipmap(GL_TEXTURE_2D);
-
-	stbi_image_free(data);
-
-
-	glBindTexture(GL_TEXTURE_2D, texture[1]);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	data = stbi_load("awesomeface.png", &width, &height, &nrChannels, 0);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-	glGenerateMipmap(GL_TEXTURE_2D);
-
-	stbi_image_free(data);
+	//vao and vbo linking for the light
+	unsigned int light_VAO;
+	glGenVertexArrays(1, &light_VAO);
+	glBindVertexArray(light_VAO);
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, (void*)0);
+	glEnableVertexAttribArray(0);
 
 	///////////////////
 	// shaders
 	////////////////////
 
-	Shader shader("4.1.shader.vs","4.1.shader.fs");
-	shader.use();
-	shader.setInt("texture0", 0);
-	shader.setInt("texture1", 1);
+	Shader colorShader("4.1.color.vs","4.1.color.fs");
+	Shader lightShader("4.1.light.vs","4.1.light.fs");
 
 	/////////////
 	// main loop
@@ -189,13 +156,12 @@ int main()
 
 	glm::vec3 cubePositions[] = {
 					glm::vec3(-1.0f, -0.0f, -0.0f),
-					glm::vec3(-1.0f, 1.0f, -2.0f),
-					glm::vec3(2.0f, -2.0f, -3.0f),
-					glm::vec3(0.0f, -0.5f, 1.0f),
-					glm::vec3(1.0f, 0.5f, -0.8f),
+					glm::vec3(2.0f, 4.0f, -8.0f),
 	};
 
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
+	glm::vec3 lightColor(1.0f, 1.0f, 1.0f);
 
 	while (!glfwWindowShouldClose(window))
 	{
@@ -208,39 +174,56 @@ int main()
 		//rendering commands
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		float time = (float) glfwGetTime();
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, texture[0]);
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, texture[1]);
 
-		shader.use();
 
+		colorShader.use();
+		colorShader.setVec3("objectColor", 1.0f, 0.5f, 0.3f);
+		colorShader.setVec3("lightColor", lightColor.x, lightColor.y, lightColor.z);
 		glm::mat4 projection = glm::perspective(glm::radians(cam.Zoom), (float)WND_WIDTH / (float)WND_HEIGHT, 0.1f, 100.0f);
-		shader.setMat4("projection", glm::value_ptr( projection));
+		colorShader.setMat4("projection", glm::value_ptr( projection));
 
 		// camera/view transformation
 		glm::mat4 view = cam.GetViewMatrix();
-		shader.setMat4("view", glm::value_ptr(view));
+		colorShader.setMat4("view", glm::value_ptr(view));
 
 		// render boxes
-		glBindVertexArray(VAO);
-		for (unsigned int i = 0; i < 5; i++)
+		glBindVertexArray(color_VAO);
+		for (unsigned int i = 0; i < 1; i++)
 		{
 			// calculate the model matrix for each object and pass it to shader before drawing
 			glm::mat4 model = glm::mat4(1.0f); // make sure to initialize matrix to identity matrix first
 			model = glm::translate(model, cubePositions[i]);
 			float angle = 20.0f * i;
 			model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
-			shader.setMat4("model", glm::value_ptr(model));
+			colorShader.setMat4("model", glm::value_ptr(model));
 
 			glDrawArrays(GL_TRIANGLES, 0, 36);
 		}
+
+		// render boxes
+		lightShader.use();
+		lightShader.setVec3("lightCol", lightColor.x, lightColor.y, lightColor.z);
+		colorShader.setMat4("projection", glm::value_ptr(projection));
+		colorShader.setMat4("view", glm::value_ptr(view));
+		for (unsigned int i = 1; i < 2; i++)
+		{
+			// calculate the model matrix for each object and pass it to shader before drawing
+			glm::mat4 model = glm::mat4(1.0f); // make sure to initialize matrix to identity matrix first
+			model = glm::translate(model, cubePositions[i]);
+			float angle = 20.0f * i;
+			model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
+			lightShader.setMat4("model", glm::value_ptr(model));
+
+		glBindVertexArray(light_VAO);
+			glDrawArrays(GL_TRIANGLES, 0, 36);
+		}
+
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 	}
 
-	glDeleteVertexArrays(1, &VAO);
+	glDeleteVertexArrays(1, &color_VAO);
+	glDeleteVertexArrays(1, &light_VAO);
 	glDeleteBuffers(1, &VBO);
 	//glDeleteBuffers(1, &EBO);
 
@@ -274,7 +257,7 @@ void processInput(GLFWwindow* window)
 		if (firstMouse)
 		{
 			last_x = x;
-			last_y = y;
+			last_y =! y;
 			firstMouse = false;
 		}
 

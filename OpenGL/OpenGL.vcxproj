@@ -274,8 +274,10 @@
     <ClInclude Include="src\stb_image.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="4.1.shader.fs" />
-    <None Include="4.1.shader.vs" />
+    <None Include="4.1.color.fs" />
+    <None Include="4.1.color.vs" />
+    <None Include="4.1.light.fs" />
+    <None Include="4.1.light.vs" />
     <None Include="Includes\glm\detail\func_common.inl" />
     <None Include="Includes\glm\detail\func_common_simd.inl" />
     <None Include="Includes\glm\detail\func_exponential.inl" />

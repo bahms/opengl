@@ -772,8 +772,6 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="4.1.shader.fs" />
-    <None Include="4.1.shader.vs" />
     <None Include="Includes\glm\detail\func_common.inl">
       <Filter>Header Files</Filter>
     </None>
@@ -1170,6 +1168,10 @@
     <None Include="Includes\glm\gtx\wrap.inl">
       <Filter>Header Files</Filter>
     </None>
+    <None Include="4.1.color.fs" />
+    <None Include="4.1.color.vs" />
+    <None Include="4.1.light.vs" />
+    <None Include="4.1.light.fs" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="wall.jpg">
